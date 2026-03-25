@@ -1,9 +1,32 @@
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import Dashboard from './pages/Dashboard'
+import Landing from './pages/Landing'
+import { getToken } from './lib/auth'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+
 export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-800">
-        Hello world
-      </h2>
-    </div>
-  );
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={getToken() ? <Navigate to="/app" replace /> : <Landing />}
+          />
+          <Route
+            path="/app"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
+  )
 }

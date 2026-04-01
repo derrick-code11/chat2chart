@@ -63,9 +63,10 @@ class Settings(BaseSettings):
         default=50,
         validation_alias=AliasChoices("DATASET_PREVIEW_MAX_ROWS", "dataset_preview_max_rows"),
     )
-    openai_api_key: str = Field(
-        ...,
+    openai_api_key: str | None = Field(
+        default=None,
         validation_alias=AliasChoices("OPENAI_API_KEY", "openai_api_key"),
+        description="Optional. Used as fallback when OpenRouter returns errors (502, 429, etc.).",
     )
     openai_base_url: str | None = Field(
         default=None,
@@ -75,16 +76,24 @@ class Settings(BaseSettings):
         default="gpt-5.4-mini",
         validation_alias=AliasChoices("OPENAI_MODEL", "openai_model"),
     )
+    openrouter_api_key: str = Field(
+        ...,
+        validation_alias=AliasChoices("OPENROUTER_API_KEY", "openrouter_api_key"),
+    )
+    openrouter_model: str = Field(
+        default="minimax/minimax-m2.5:free",
+        validation_alias=AliasChoices("OPENROUTER_MODEL", "openrouter_model"),
+    )
     llm_chart_timeout_seconds: float = Field(
         default=90.0,
         validation_alias=AliasChoices("LLM_CHART_TIMEOUT_SECONDS", "llm_chart_timeout_seconds"),
     )
 
-    @field_validator("openai_api_key", mode="before")
+    @field_validator("openrouter_api_key", mode="before")
     @classmethod
-    def _openai_api_key_non_empty(cls, v: object) -> str:
+    def _openrouter_api_key_non_empty(cls, v: object) -> str:
         if v is None or (isinstance(v, str) and not v.strip()):
-            raise ValueError("OPENAI_API_KEY is required for chart generation")
+            raise ValueError("OPENROUTER_API_KEY is required for chart generation")
         return str(v).strip()
 
     @field_validator("s3_bucket", mode="before")

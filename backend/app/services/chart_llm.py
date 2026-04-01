@@ -10,7 +10,7 @@ from openai import APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 
 from app.config import settings
 from app.core.errors import CHART_GENERATION_FAILED, DATASET_NOT_READY, LLM_UPSTREAM, AppError
-from app.models import Dataset, DatasetColumn
+from app.models import Dataset, DatasetColumn, Message
 from app.services import dataset_parse, storage
 from app.services.chart_spec_validate import validate_chart_spec
 from app.services.data_analysis import compute_column_stats, execute_analysis_plan
@@ -125,6 +125,7 @@ Rules:
 - limit: 10-50 for bar/pie, up to 100 for line/stacked_bar.
 - For in/not_in filter ops, value must be a JSON array.
 - USE transforms when the user asks about above/below median, binned ranges, date breakdowns, ratios, top-N grouping, percentiles, or computed columns. This is critical — do not skip transforms when they are needed.
+- CONVERSATION CONTEXT: if provided, use prior messages to resolve references like "this", "same", "the previous chart", "as a pie" etc. Reuse the same fields/dimensions from the last chart unless the user explicitly asks to change them. Only change chart_type when the user requests a different type.
 Output ONLY the JSON object."""
 
 
@@ -147,7 +148,47 @@ Encoding rules:
 - stacked_bar: x, series, y
 - pie: label and value (or x and y)
 - Column names in encoding and rows must match the provided data exactly.
+- CONVERSATION CONTEXT: if provided, use it to resolve follow-up references ("this", "same chart", etc.). Reuse fields and dimensions from the previous chart unless the user explicitly changes them.
 Output ONLY the JSON object."""
+
+
+_MAX_CONTEXT_MESSAGES = 6
+_MAX_CONTENT_CHARS = 200
+
+
+def _summarize_chart_spec(spec: dict[str, Any]) -> str:
+    """One-line summary of a chart_spec for conversation context."""
+    ctype = spec.get("type", "?")
+    enc = spec.get("encoding", {})
+    fields: list[str] = []
+    for slot in ("x", "y", "label", "value", "series"):
+        f = enc.get(slot, {}).get("field")
+        if f:
+            fields.append(f"{slot}={f}")
+    title = spec.get("title", "")
+    parts = [f"type={ctype}"]
+    if fields:
+        parts.append(", ".join(fields))
+    if title:
+        parts.append(f'title="{title}"')
+    return "[chart: " + " | ".join(parts) + "]"
+
+
+def _build_conversation_context(messages: list[Message]) -> str:
+    """Format recent messages into a compact context block for the LLM."""
+    if not messages:
+        return ""
+    recent = messages[-_MAX_CONTEXT_MESSAGES:]
+    lines: list[str] = []
+    for m in recent:
+        tag = "user" if m.role == "user" else "assistant"
+        text = (m.content or "").strip()
+        if len(text) > _MAX_CONTENT_CHARS:
+            text = text[:_MAX_CONTENT_CHARS] + "…"
+        lines.append(f"[{tag}] {text}")
+        if m.role == "assistant" and isinstance(m.chart_spec, dict) and m.chart_spec:
+            lines.append(_summarize_chart_spec(m.chart_spec))
+    return "\n".join(lines)
 
 
 def _parse_json_object(raw: str) -> dict[str, Any]:
@@ -287,6 +328,8 @@ async def build_chart_spec_llm(
     dataset: Dataset,
     columns: list[DatasetColumn],
     user_message: str,
+    *,
+    conversation_history: list[Message] | None = None,
 ) -> tuple[dict[str, Any], str]:
     if dataset.status != "ready":
         raise AppError(422, DATASET_NOT_READY, "Dataset is not ready yet.")
@@ -323,8 +366,13 @@ async def build_chart_spec_llm(
             422, CHART_GENERATION_FAILED, f"Could not compute column stats: {e}",
         ) from e
 
+    # --- Conversation context ------------------------------------------------
+    conv_ctx = _build_conversation_context(conversation_history or [])
+    ctx_block = f"Conversation so far:\n{conv_ctx}\n\n" if conv_ctx else ""
+
     # --- Phase 1: Planner ---------------------------------------------------
     planner_user = (
+        f"{ctx_block}"
         f"Dataset statistics:\n{stats_json}\n\n"
         f"User request:\n{user_message.strip() or '(empty)'}\n"
     )
@@ -358,6 +406,7 @@ async def build_chart_spec_llm(
     )
 
     chart_user = (
+        f"{ctx_block}"
         f"Dataset columns (from aggregated result):\n"
         f"{json.dumps(list(result_rows[0].keys()), ensure_ascii=False)}\n\n"
         f"Aggregated data (computed from ALL {len(df)} rows):\n"

@@ -193,7 +193,22 @@ async def create_message(
             .order_by(DatasetColumn.ordinal)
         )
     ).all()
-    chart_spec, assistant_content = await build_chart_spec_llm(ds, list(cols), body.content)
+
+    prior_msgs: list[Message] = list(
+        (
+            await session.scalars(
+                select(Message)
+                .where(Message.conversation_id == conversation_id)
+                .order_by(Message.sequence.desc())
+                .limit(10)
+            )
+        ).all()
+    )
+    prior_msgs.reverse()
+
+    chart_spec, assistant_content = await build_chart_spec_llm(
+        ds, list(cols), body.content, conversation_history=prior_msgs,
+    )
 
     assistant_msg = Message(
         conversation_id=conversation_id,

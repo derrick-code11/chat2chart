@@ -31,6 +31,15 @@ def _row_value(row: dict[str, Any], field: str) -> Any:
 def _coerce_float(v: Any) -> float:
     if v is None:
         raise ValueError("null")
+    if isinstance(v, bool):
+        return float(int(v))
+    if isinstance(v, str):
+        s = v.strip().replace(",", "")
+        if not s:
+            raise ValueError("empty string")
+        return float(s)
+    if isinstance(v, (int, float)):
+        return float(v)
     return float(v)
 
 
@@ -101,6 +110,13 @@ def chart_spec_to_png_bytes(spec: dict[str, Any]) -> bytes:
                 )
             labels = [str(_row_value(r, lf)) for r in rows]
             sizes = [_coerce_float(_row_value(r, vf)) for r in rows]
+            total = sum(sizes)
+            if total <= 0:
+                raise AppError(
+                    422,
+                    VALIDATION_ERROR,
+                    "pie chart values must sum to a positive number for PNG export.",
+                )
             cols = _palette_colors(
                 [str(c) for c in palette] if palette else None, len(labels)
             )
@@ -125,6 +141,7 @@ def chart_spec_to_png_bytes(spec: dict[str, Any]) -> bytes:
                         VALIDATION_ERROR,
                         f"stacked_bar rows must include field {col!r}.",
                     )
+            df[yf] = pd.to_numeric(df[yf], errors="coerce").fillna(0)
             pivot = df.pivot_table(
                 index=xf,
                 columns=sf,
@@ -132,10 +149,17 @@ def chart_spec_to_png_bytes(spec: dict[str, Any]) -> bytes:
                 aggfunc="sum",
                 fill_value=0,
             )
+            if pivot.empty or pivot.shape[1] == 0:
+                raise AppError(
+                    422,
+                    VALIDATION_ERROR,
+                    "stacked_bar data could not be pivoted for export (empty series).",
+                )
+            n_series = int(pivot.shape[1])
             colors = _palette_colors(
-                [str(c) for c in palette] if palette else None, pivot.shape[1]
+                [str(c) for c in palette] if palette else None, n_series
             )
-            pivot.plot(kind="bar", stacked=True, ax=ax, color=colors)
+            pivot.plot(kind="bar", stacked=True, ax=ax, color=colors[:n_series])
             ax.set_title(title)
             ax.legend(title=str(enc.get("series", {}).get("label", sf)), bbox_to_anchor=(1.02, 1))
             ax.set_xlabel(str(enc.get("x", {}).get("label", xf)))

@@ -39,6 +39,56 @@ def _sanitize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _strip_and_coerce_object_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Trim whitespace, empty→NA, and coerce object columns to numeric when clearly numeric."""
+    for col in df.columns:
+        if not (df[col].dtype == object or pd.api.types.is_string_dtype(df[col])):
+            continue
+        s = df[col]
+
+        def _clean_cell(v: Any) -> Any:
+            if v is None:
+                return np.nan
+            if isinstance(v, float) and np.isnan(v):
+                return np.nan
+            if pd.isna(v):
+                return np.nan
+            if isinstance(v, str):
+                t = v.strip()
+                return np.nan if t == "" else t
+            return v
+
+        cleaned = s.map(_clean_cell)
+
+        def _for_numeric_parse(v: Any) -> str | float:
+            if v is None or (isinstance(v, float) and np.isnan(v)):
+                return np.nan
+            if pd.isna(v):
+                return np.nan
+            return str(v).replace(",", "")
+
+        str_try = cleaned.map(_for_numeric_parse)
+        coerced = pd.to_numeric(str_try, errors="coerce")
+        orig_nonnull = int(cleaned.notna().sum())
+        coerced_nonnull = int(coerced.notna().sum())
+        if orig_nonnull > 0 and coerced_nonnull / orig_nonnull >= 0.85:
+            df[col] = coerced
+        else:
+            df[col] = cleaned
+    return df
+
+
+def apply_upload_cleaning(df: pd.DataFrame, *, drop_empty_columns: bool) -> pd.DataFrame:
+    """Targeted hygiene after load: strings, numeric-like text, empty rows/columns."""
+    df = df.copy()
+    df = _strip_and_coerce_object_columns(df)
+    df = df.dropna(how="all")
+    if drop_empty_columns:
+        df = df.dropna(axis=1, how="all")
+    df = df.reset_index(drop=True)
+    return df
+
+
 def json_safe_scalar(value: Any) -> Any:
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return None
@@ -122,7 +172,9 @@ def read_tabular_head(content: bytes, original_filename: str, nrows: int) -> pd.
         ) from e
     if df.empty or len(df.columns) == 0:
         raise AppError(400, VALIDATION_ERROR, "The file has no rows or columns.")
-    return _sanitize_column_names(df)
+    df = _sanitize_column_names(df)
+    df = apply_upload_cleaning(df, drop_empty_columns=False)
+    return df
 
 
 def read_tabular(content: bytes, original_filename: str) -> pd.DataFrame:
@@ -157,6 +209,13 @@ def read_tabular(content: bytes, original_filename: str) -> pd.DataFrame:
         raise AppError(400, VALIDATION_ERROR, "The file has no rows or columns.")
 
     df = _sanitize_column_names(df)
+    df = apply_upload_cleaning(df, drop_empty_columns=True)
+    if df.empty or len(df.columns) == 0:
+        raise AppError(
+            400,
+            VALIDATION_ERROR,
+            "After cleaning, the file has no rows or columns.",
+        )
     return df
 
 

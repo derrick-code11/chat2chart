@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ConversationView from "../components/ConversationView";
 import EmptyState from "../components/EmptyState";
 import Sidebar from "../components/Sidebar";
+import Spinner from "../components/Spinner";
 import { clearToken } from "../lib/auth";
 import { api } from "../lib/api";
 
@@ -56,6 +57,16 @@ export default function Dashboard() {
     setInitialDataset(dataset ?? null);
   }
 
+  async function handleDeleteConversation(id) {
+    try {
+      await api.conversations.delete(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (activeConvId === id) setActiveConvId(null);
+    } catch {
+      // conversation may already be gone
+    }
+  }
+
   function handleConversationUpdated(patch) {
     setConversations((prev) =>
       prev.map((c) => (c.id === patch.id ? { ...c, ...patch } : c))
@@ -66,50 +77,22 @@ export default function Dashboard() {
 
   if (bootstrapping) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          backgroundColor: "#F1EFEB",
-        }}
-      >
-        <svg className="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke="#C4D8CB"
-            strokeWidth="2.5"
-            strokeDasharray="48"
-            strokeDashoffset="16"
-          />
-        </svg>
+      <div className="flex items-center justify-center h-screen bg-brand-bg">
+        <Spinner size={24} />
       </div>
     );
   }
 
   if (bootError) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          backgroundColor: "#F1EFEB",
-        }}
-      >
-        <p style={{ fontSize: 14, color: "#C0392B", fontFamily: "Inter, sans-serif" }}>
-          {bootError}
-        </p>
+      <div className="flex items-center justify-center h-screen bg-brand-bg">
+        <p className="text-sm text-brand-error">{bootError}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div className="flex h-screen overflow-hidden">
       <Sidebar
         user={user}
         conversations={conversations}
@@ -119,18 +102,11 @@ export default function Dashboard() {
           setInitialDataset(null);
         }}
         onNewChat={handleNewChat}
+        onDelete={handleDeleteConversation}
         onSignOut={handleSignOut}
       />
 
-      <main
-        style={{
-          flex: 1,
-          overflow: "hidden",
-          backgroundColor: "#F1EFEB",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <main className="flex-1 overflow-hidden bg-brand-bg flex flex-col">
         {activeConv ? (
           <ConversationView
             key={activeConv.id}

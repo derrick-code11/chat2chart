@@ -35,10 +35,22 @@ async def export_message_chart_png(
     if msg is None:
         raise AppError(404, NOT_FOUND, "Message not found.")
 
-    if not msg.chart_spec:
-        raise AppError(422, VALIDATION_ERROR, "Message has no chart to export.")
+    spec = msg.chart_spec
+    if not isinstance(spec, dict) or not spec:
+        raise AppError(
+            422,
+            VALIDATION_ERROR,
+            "This message has no chart to export. Use the assistant reply that includes the chart.",
+        )
+    rows = spec.get("data", {}).get("rows") if isinstance(spec.get("data"), dict) else None
+    if not rows or not isinstance(rows, list):
+        raise AppError(
+            422,
+            VALIDATION_ERROR,
+            "Chart data is missing or empty; cannot export PNG.",
+        )
 
-    png_bytes = await chart_spec_to_png_bytes_async(msg.chart_spec)
+    png_bytes = await chart_spec_to_png_bytes_async(spec)
 
     session.add(
         Export(

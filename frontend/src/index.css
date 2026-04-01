@@ -7,6 +7,16 @@
   --color-brand-dark: #2A2A2A;
   --color-brand-muted: #6B6B6B;
   --color-brand-border: #D4D0CA;
+  --color-brand-error: #C0392B;
+
+  --color-surface: #FFFFFF;
+  --color-chart-border: #E4E0DA;
+  --color-muted-light: #9A9A8A;
+
+  --color-sidebar-text: #7A7A6A;
+  --color-sidebar-text-active: #E8E6E0;
+  --color-sidebar-text-dim: #4A4A3A;
+  --color-sidebar-hover: #D4D0CA;
 
   --font-sans: "Inter", sans-serif;
   --font-mono: "Geist Mono", monospace;
@@ -35,7 +45,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #C4D8CB;
+  background-color: var(--color-brand-primary);
   animation: pulse 1.3s ease-in-out infinite;
 }
 
@@ -46,8 +56,22 @@ html, body, #root {
 
 body {
   font-family: var(--font-sans);
-  background-color: #F1EFEB;
-  color: #2A2A2A;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-dark);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  a[href] {
+    cursor: pointer;
+  }
 }

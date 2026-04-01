@@ -168,6 +168,18 @@ async def patch_conversation(
     return success(_conversation_summary(c))
 
 
+@router.delete("/{conversation_id}")
+async def delete_conversation(
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    c = await _get_owned_conversation(session, user, conversation_id)
+    await session.delete(c)
+    await session.flush()
+    return success(None, message="Deleted.")
+
+
 @router.get("/{conversation_id}/datasets")
 async def list_attached_datasets(
     conversation_id: uuid.UUID,

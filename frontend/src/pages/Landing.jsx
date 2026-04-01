@@ -51,50 +51,29 @@ export default function Landing() {
   }
 
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ backgroundColor: "#F1EFEB" }}
-    >
+    <div className="flex h-screen w-screen overflow-hidden bg-brand-bg">
       <div
-        className="hidden md:flex flex-col justify-between w-[58%] p-14 relative overflow-hidden"
-        style={{ backgroundColor: "#2A2A2A" }}
+        className="hidden md:flex flex-col justify-between w-[58%] p-14 relative overflow-hidden bg-brand-dark"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg,rgba(255,255,255,0.04) 0px,rgba(255,255,255,0.04) 1px,transparent 1px,transparent 48px)," +
+            "repeating-linear-gradient(90deg,rgba(255,255,255,0.04) 0px,rgba(255,255,255,0.04) 1px,transparent 1px,transparent 48px)",
+        }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg,#fff 0px,#fff 1px,transparent 1px,transparent 48px)," +
-              "repeating-linear-gradient(90deg,#fff 0px,#fff 1px,transparent 1px,transparent 48px)",
-          }}
-        />
-
         <div className="relative z-10">
-          <span
-            className="text-sm font-mono tracking-[0.18em] uppercase"
-            style={{ color: "#C4D8CB", fontFamily: '"Geist Mono", monospace' }}
-          >
+          <span className="text-sm font-mono tracking-[0.18em] uppercase text-brand-primary">
             chat2chart
           </span>
         </div>
 
         <div className="relative z-10 max-w-lg">
-          <p
-            className="text-xs font-mono uppercase tracking-widest mb-6"
-            style={{ color: "#107A4D", fontFamily: '"Geist Mono", monospace' }}
-          >
+          <p className="text-xs font-mono uppercase tracking-widest mb-6 text-brand-accent">
             Data → Charts
           </p>
-          <h1
-            className="text-5xl font-semibold leading-[1.1] mb-8"
-            style={{ color: "#F1EFEB", letterSpacing: "-0.02em" }}
-          >
-            Your data, <span style={{ color: "#C4D8CB" }}>visualized</span> in
-            seconds.
+          <h1 className="text-5xl font-semibold leading-[1.1] mb-8 text-brand-bg tracking-[-0.02em]">
+            Your data, <span className="text-brand-primary">visualized</span> in seconds.
           </h1>
-          <p
-            className="text-base leading-relaxed"
-            style={{ color: "#9A9A8A", fontFamily: "Inter, sans-serif" }}
-          >
+          <p className="text-base leading-relaxed text-muted-light">
             Upload a dataset, ask a question in plain English, and get a
             publication-ready chart — no SQL, no code, no fuss.
           </p>
@@ -102,30 +81,14 @@ export default function Landing() {
           <ul className="mt-10 space-y-5">
             {FEATURES.map((f) => (
               <li key={f.label} className="flex gap-4 items-start">
-                <span
-                  className="mt-0.5 shrink-0 w-4 h-4 flex items-center justify-center"
-                  style={{ color: "#107A4D" }}
-                >
+                <span className="mt-0.5 shrink-0 w-4 h-4 flex items-center justify-center text-brand-accent">
                   <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
-                    <path
-                      d="M3 8.5L6.5 12 13 5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="square"
-                    />
+                    <path d="M3 8.5L6.5 12 13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
                   </svg>
                 </span>
                 <span>
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: "#E8E6E0" }}
-                  >
-                    {f.label}
-                  </span>
-                  <span className="text-sm" style={{ color: "#7A7A6A" }}>
-                    {" "}
-                    — {f.desc}
-                  </span>
+                  <span className="text-sm font-medium text-sidebar-text-active">{f.label}</span>
+                  <span className="text-sm text-sidebar-text"> — {f.desc}</span>
                 </span>
               </li>
             ))}
@@ -133,64 +96,32 @@ export default function Landing() {
         </div>
 
         <div className="relative z-10">
-          <p
-            className="text-xs"
-            style={{ color: "#5A5A4A", fontFamily: '"Geist Mono", monospace' }}
-          >
+          <p className="text-xs font-mono text-sidebar-text-dim">
             Free to start. No credit card required.
           </p>
         </div>
       </div>
 
-      <div
-        className="flex flex-col items-center justify-center flex-1 px-8"
-        style={{ backgroundColor: "#F1EFEB" }}
-      >
+      <div className="flex flex-col items-center justify-center flex-1 px-8 bg-brand-bg">
         <div className="w-full max-w-[340px]">
-          <p
-            className="md:hidden text-xs font-mono uppercase tracking-[0.18em] mb-10 text-center"
-            style={{ color: "#107A4D", fontFamily: '"Geist Mono", monospace' }}
-          >
+          <p className="md:hidden text-xs font-mono uppercase tracking-[0.18em] mb-10 text-center text-brand-accent">
             chat2chart
           </p>
 
-          <h2
-            className="text-2xl font-semibold mb-2"
-            style={{ color: "#2A2A2A", letterSpacing: "-0.02em" }}
-          >
+          <h2 className="text-2xl font-semibold mb-2 text-brand-dark tracking-[-0.02em]">
             Get started
           </h2>
-          <p className="text-sm mb-8" style={{ color: "#6B6B6B" }}>
+          <p className="text-sm mb-8 text-brand-muted">
             Sign in to create your first chart.
           </p>
 
-          <div
-            className="w-full h-px mb-8"
-            style={{ backgroundColor: "#D4D0CA" }}
-          />
+          <div className="w-full h-px mb-8 bg-brand-border" />
 
           <div className="flex flex-col items-stretch gap-3">
             {loading ? (
-              <div
-                className="flex items-center justify-center gap-2 py-3 text-sm"
-                style={{ color: "#6B6B6B" }}
-              >
-                <svg
-                  className="animate-spin"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                >
-                  <circle
-                    cx="8"
-                    cy="8"
-                    r="6"
-                    stroke="#C4D8CB"
-                    strokeWidth="2"
-                    strokeDasharray="28"
-                    strokeDashoffset="10"
-                  />
+              <div className="flex items-center justify-center gap-2 py-3 text-sm text-brand-muted">
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="#C4D8CB" strokeWidth="2" strokeDasharray="28" strokeDashoffset="10" />
                 </svg>
                 Signing in…
               </div>
@@ -209,32 +140,18 @@ export default function Landing() {
           </div>
 
           {error && (
-            <p
-              className="mt-4 text-xs text-center leading-snug"
-              style={{ color: "#C0392B" }}
-            >
+            <p className="mt-4 text-xs text-center leading-snug text-brand-error">
               {error}
             </p>
           )}
 
-          <div
-            className="w-full h-px mt-8 mb-6"
-            style={{ backgroundColor: "#D4D0CA" }}
-          />
+          <div className="w-full h-px mt-8 mb-6 bg-brand-border" />
 
-          <p
-            className="text-xs text-center leading-relaxed"
-            style={{ color: "#9A9A8A" }}
-          >
+          <p className="text-xs text-center leading-relaxed text-muted-light">
             By continuing, you agree to our{" "}
-            <a href="/terms" style={{ color: "#107A4D" }}>
-              Terms
-            </a>{" "}
+            <a href="/terms" className="text-brand-accent hover:underline">Terms</a>{" "}
             and{" "}
-            <a href="/privacy" style={{ color: "#107A4D" }}>
-              Privacy Policy
-            </a>
-            .
+            <a href="/privacy" className="text-brand-accent hover:underline">Privacy Policy</a>.
           </p>
         </div>
       </div>
